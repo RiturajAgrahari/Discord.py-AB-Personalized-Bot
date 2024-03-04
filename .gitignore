@@ -1,0 +1,7 @@
+.idea/
+__pycache__/
+Credentials/
+*.env
+share_link.txt
+*.png
+test.py
