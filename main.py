@@ -1,14 +1,15 @@
 import os
 import discord
+import constants as const
 
 from datetime import datetime
-from typing import Literal
 
 from dotenv import load_dotenv
 from discord import app_commands
 from discord.ext import tasks
 
-from add_test import creating_test, get_question_ready, ask_question
+from add_test import creating_test
+from start_test import ask_question, get_question_ready
 
 load_dotenv()
 
@@ -41,7 +42,7 @@ client = MyClient(intents=intents)
 
 @client.event
 async def on_ready():
-    print(f'Your Arena Breakout bot in succesfully started as {client.user} (ID: {client.user.id})')
+    print(f'Your Arena Breakout bot in successfully started as {client.user} (ID: {client.user.id})')
     print('-----')
     await my_loop.start()
 
@@ -54,13 +55,16 @@ async def my_loop():
         questions = list(question.keys())
 
     # Get the current UTC time
-    current_time_utc = datetime.utcnow().replace(second=0, microsecond=0)
+    try:
+        current_time_utc = datetime.utcnow().replace(second=0, microsecond=0)
+    except Exception:
+        current_time_utc = datetime.now(datetime.UTC).replace(second=0, microsecond=0)
+
     print(f"current_time_utc: {current_time_utc}", questions)
 
     if current_time_utc in questions:
-        channel = client.get_channel(1199253624350576692)
+        channel = client.get_channel(const.ASKING_CHANNEL)
         await ask_question(question[current_time_utc], current_time_utc, channel)
-
 
 
 @client.event
@@ -84,19 +88,21 @@ async def on_message(message):
         if channel == 'fandom':
             print('success')
 
-            if message.content == 'update_database_only_once' and message.author.mention == '<@568179896459722753>':
+            if message.content == 'update_database_only_once' and message.author.mention == const.OWNER_MENTION_ID:
                 print('AYOOOOOOOOOO!')
-                await create_updated_db()
 
-@client.tree.command(name='create', description="create your question!")
-async def quest(interaction: discord.Interaction):
+
+@client.tree.command(name='create-question', description="create your question!")
+async def create_question(interaction: discord.Interaction):
     if interaction.guild.id == MAIN_GUILD_ID:
         await creating_test(client, interaction, 'title', 'description')
 
     else:
-        await interaction.response.send_message(embed=discord.Embed(title='',
-                                                                    description="This command is not available in this server.",
-                                                                    color=discord.Color.red()), ephemeral=True)
+        await interaction.response.send_message(
+            embed=discord.Embed(title='',
+                                description="This command is not available in this server.",
+                                color=discord.Color.red()),
+            ephemeral=True)
 
 
 async def get_avatar_url(interaction):
@@ -110,16 +116,9 @@ async def get_avatar_url(interaction):
 
 # Last Optimization [19-01-2024] --> Need Relocation
 async def send_error(file, function_name, error, server='Anonymous'):
-    embed = discord.Embed(title=f'{server} Server',
-        description=file,
-        color=discord.Color.red()
-    )
-    embed.add_field(
-        name=function_name,
-        value=error,
-        inline=False
-    )
-    user = await client.fetch_user(568179896459722753)
+    embed = discord.Embed(title=f'{server} Server', description=file, color=discord.Color.red())
+    embed.add_field(name=function_name, value=error, inline=False)
+    user = await client.fetch_user(const.OWNER_ID)
     await user.send(embed=embed)
 
 
