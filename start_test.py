@@ -24,10 +24,11 @@ async def ask_question(dataset, cur_time, channel):
     if dataset['type'] == 'descriptive':
         class MyView(View):
             def __init__(self):
-                super().__init__()
+                super().__init__(timeout=None)
 
             @discord.ui.button(label='answer', style=discord.ButtonStyle.green)
             async def answer(self, interaction: discord.Interaction, button: discord.ui.Button):
+                answered[interaction.user.id] = str(self.values[0])
                 if interaction.user.id in answered.keys():
                     await interaction.response.send_message('You already responded on this question.', ephemeral=True)
                 else:
